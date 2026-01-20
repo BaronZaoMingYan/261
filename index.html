@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="description"
+        content="Surface-Aware Feed-Forward Quadratic Gaussian for Frame Interpolation with Large Motion">
+  <meta name="keywords" content="Nerfies, D-NeRF, NeRF">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Surface-Aware Feed-Forward Quadratic Gaussian for Frame Interpolation with Large Motion</title>
+
+  <!-- Global site tag (gtag.js) - Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-PYVRSFMDRL"></script>
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script id="MathJax-script" async
+    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+  </script>
+
+  <script>
+    window.dataLayer = window.dataLayer || [];
+
+    function gtag() {
+      dataLayer.push(arguments);
+    }
+
+    gtag('js', new Date());
+
+    gtag('config', 'G-PYVRSFMDRL');
+  </script>
+
+  <link href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans|Castoro"
+        rel="stylesheet">
+
+  <link rel="stylesheet" href="./static/css/bulma.min.css">
+  <link rel="stylesheet" href="./static/css/bulma-carousel.min.css">
+  <link rel="stylesheet" href="./static/css/bulma-slider.min.css">
+  <link rel="stylesheet" href="./static/css/fontawesome.all.min.css">
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css">
+  <link rel="stylesheet" href="./static/css/index.css">
+  <!-- <link rel="icon" href="./static/images/favicon.svg"> -->
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script defer src="./static/js/fontawesome.all.min.js"></script>
+  <script src="./static/js/bulma-carousel.min.js"></script>
+  <script src="./static/js/bulma-slider.min.js"></script>
+  <script src="./static/js/index.js"></script>
+</head>
+<body>
+
+
+
+<section class="hero">
+  <div class="hero-body">
+    <div class="container is-max-desktop">
+      <div class="columns is-centered">
+        <div class="column has-text-centered">
+          <h1 class="title is-1 publication-title">Surface-Aware Feed-Forward Quadratic Gaussian for Frame Interpolation with Large Motion</h1>
+
+          <div class="is-size-5 publication-authors">
+            <span class="author-block"> </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container is-max-desktop">
+    <!-- Motivation. -->
+    <div class="header_dark_gray">
+      <h2 class="title is-3">Motivation</h2>
+    </div>
+    <div class="content has-text-justified">
+        <p>
+          Frame correspondences can be categorized into two types: <b>static correspondences</b>, which are primarily caused by background changes due to camera motion, and <b>dynamic correspondences</b>, 
+          which result from object motion. 
+          Existing approaches, such as optical flow and self-attention mechanisms, have certain limitations in modeling scene-level <b>static correspondences</b>. 
+          They often struggle to capture globally consistent background alignment, which in turn affects the quality of frame interpolation, as shown in the figure below.
+          Our method mainly focuses on addressing large-scale background displacements induced by camera motion.
+        </p>
+    </div>
+      <img src="./static/images/intro1.png" alt="High level figure for the method"  style="max-width: 100%;  height: auto;">
+  </div>
+</section>
+
+
+<section class="section">
+  <div class="container is-max-desktop">
+    <!-- 大标题 -->
+    <div class="header_dark_gray">
+      <h2 class="title is-3">Method</h2>
+    </div>
+    <!-- 子标题 1 -->
+    <h3 class="title is-5">(I) Input Frames</h3>
+    <div class="content has-text-justified">
+      <p>
+        We take two input video frames, \(I^0 \in \mathbb{R}^{H \times W}\) and \(I^1 \in \mathbb{R}^{H \times W \times 3}\), 
+        where H and W denote the height and width of the image, respectively.
+      </p>
+    </div>
+
+    <h3 class="title is-5">(II) Feed-Forward Quadratic Gaussian produce Point Cloud</h3>
+    <div class="content has-text-justified">
+      <p>
+        VGGT demonstrates strong performance in modeling <b>static correspondences</b>. 
+        We leverage this capability to obtain the point clouds \(\mathcal{P}^0 \in \mathbb{R}^{HW \times 3}\) 
+        and \(\mathcal{P}^1 \in \mathbb{R}^{HW \times 3}\) aligned based on static correspondences, 
+        where \(HW\) is the number of points (pixels), \(3\) represents the 3D spatial coordinates. 
+In addition, we visualize the scene by constructing \([ \mathcal{P}^0 || \mathcal{P}^1 ]\) to 
+verify the quality of the static correspondence alignment in below section (Comparison Backbones). 
+Here, the symbol \(||\) denotes the concatenation operation, i.e., torch.cat() in PyTorch.
+      </p>
+    </div>
+
+    <div class="has-text-centered">
+      <figure class="image is-inline-block">
+        <img src="./static/images/intro3.png" alt="High level figure for the method">
+      </figure>
+    </div>
+
+    <!-- 子标题 2 -->
+    <h3 class="title is-5" style="margin-top: 2rem;">(III) Line Motion Animation</h3>
+    <div class="content has-text-justified">
+      <p>
+        Due to the alignment of static correspondences and 
+        the short temporal interval between adjacent frames in video interpolation tasks, 
+        we follow the linear motion assumption of previous works. 
+        Based on this, we compute the interpolated point cloud at time  
+        \(t \in [0, 1]\) as: \(\mathcal{P}^t = (1-t) \mathcal{P}^0 + t \mathcal{P}^1\). 
+        By continuously varying \(t\), we generate a sequence of intermediate point clouds 
+        \(\mathcal{P}^t \in \mathbb{R}^{HW\times3}\).
+      </p>
+    </div>
+
+    <div class="box has-text-centered">
+      <h3 class="title is-5">Scene 1</h3>
+      <figure class="image is-16by9">
+        <img src="./static/moves/1.gif" alt="Scene 1 Animation" style=" width: 100%;  height: auto;">
+      </figure>
+    </div>
+
+    <div class="box has-text-centered">
+      <h3 class="title is-5">Scene 2</h3>
+      <figure class="image is-16by9">
+        <img src="./static/moves/2.gif" alt="Scene 2 Animation" style="max-width: 100%;  height: auto;">
+      </figure>
+    </div>
+
+    <div class="box has-text-centered">
+      <h3 class="title is-5">Scene 3</h3>
+      <figure class="image is-16by9">
+        <img src="./static/moves/3.gif" alt="Scene 3 Animation" style="max-width: 100%;  height: auto;">
+      </figure>
+    </div>
+
+    <!-- 子标题 3 -->
+    <h3 class="title is-5" style="margin-top: 2rem;">(IV) Rendering Frame</h3>
+    <div class="content has-text-justified">
+      <p>
+        The interpolated point cloud \(\mathcal{P}^t\)  is then fed into the QGS head, which renders the intermediate frame \(I^t\). 
+        We compute the loss between the rendered frame \(I^t\)  and the ground truth intermediate frame \(I^t_{gt}\).
+      </p>
+    </div>
+
+    <div class="has-text-centered">
+      <figure class="image is-inline-block">
+        <img src="./static/images/gs.png" alt="High level figure for the method">
+      </figure>
+    </div>
+    
+  </div>
+</section>
+
+
+
+
+<section class="section">
+  <div class="container is-max-desktop">
+    <div class="header_dark_gray">
+      <h2 class="title is-3">Comparison Backbones</h2>
+    </div>
+
+    <div class="content has-text-justified">
+      <p>
+        **VGGT** shows significantly better performance than CUT3R in modeling **static correspondences**, exhibiting stronger background alignment. 
+        However, for dynamic objects, both VGGT and CUT3R suffer from a certain degree of object overlap.
+      </p>
+    </div>
+
+    <!-- Scene 1 -->
+    <div class="box has-text-centered">
+      <h3 class="title is-5">Scene 1</h3>
+      <figure class="image">
+        <img src="./static/backbone/1.png" alt="Scene 1" style="max-width: 100%;  height: auto;">
+      </figure>
+    </div>
+
+    <!-- Scene 2 -->
+    <div class="box has-text-centered">
+      <h3 class="title is-5">Scene 2</h3>
+      <figure class="image">
+        <img src="./static/backbone/2.png" alt="Scene 2" style="max-width: 100%;  height: auto;">
+      </figure>
+    </div>
+
+    <!-- Scene 3 -->
+    <div class="box has-text-centered">
+      <h3 class="title is-5">Scene 3</h3>
+      <figure class="image">
+        <img src="./static/backbone/3.png" alt="Scene 3" style="max-width: 100%;  height: auto;">
+      </figure>
+    </div>
+
+  </div>
+</section>
+
+
+
+
+
+<section class="section">
+  <div class="container is-max-desktop">
+    <div class="container">
+		  <div class="header_dark_gray">
+				<h2 class="title is-3">Comparisons to prior of larg motion work</h2>
+			</div>
+			<div class="content has-text-justified">
+			</div>
+			<div class="row" id="comparisons-select" style="text-align: center;">
+				<div class="col"> AMT </div>
+        <div class="col"> EMA </div>
+				<div class="col"> SGM-VFI </div>
+				<div class="col selected"> Ours </div>
+      </div>
+      <div id="comparisons-show">
+      	<div class="item"> 
+          <div class="row"> 
+            <!-- <div class="col"><video autoplay loop muted ><source type="video/mp4" src="./static/videos/1_input.mp4"></video></div>  -->
+              <!-- <div class="col" style="width: 12rem;"> <div class="right_arrow"></div></div> -->
+              <div class="col"><img src="./static/videos/rife01.gif" alt="loading......"></div>
+              <div class="col"><img src="./static/videos/amt01.gif" alt="loading......"></div>
+              <div class="col"><img src="./static/videos/ema01.gif" alt="loading......"></div>
+              <!-- <div class="col"><img src="./static/videos/sgm01.gif" alt="loading......"></div> -->
+              <div class="col"><img src="./static/videos/our01.gif" alt="loading......"></div>
+              <!-- <div class="col"><video autoplay loop muted><source type="video/mp4" src="./static/videos/08_gt.mp4"></video></div>  -->
+          </div>
+        </div>
+
+      	<div class="item"> 
+          <div class="row"> 
+            <!-- <div class="col"><video autoplay loop muted ><source type="video/mp4" src="./static/videos/1_input.mp4"></video></div>  -->
+              <!-- <div class="col" style="width: 12rem;"> <div class="right_arrow"></div></div> -->
+              <div class="col"><img src="./static/videos/rife02.gif" alt="loading......"></div>
+              <div class="col"><img src="./static/videos/amt02.gif" alt="loading......"></div>
+              <div class="col"><img src="./static/videos/ema02.gif" alt="loading......"></div>
+              <!-- <div class="col"><img src="./static/videos/sgm02.gif" alt="loading......"></div> -->
+              <div class="col"><img src="./static/videos/our02.gif" alt="loading......"></div>
+              <!-- <div class="col"><video autoplay loop muted><source type="video/mp4" src="./static/videos/09_gt.mp4"></video></div>  -->
+          </div>
+        </div>
+
+      	<div class="item"> 
+          <div class="row"> 
+            <!-- <div class="col"><video autoplay loop muted ><source type="video/mp4" src="./static/videos/1_input.mp4"></video></div>  -->
+              <!-- <div class="col" style="width: 12rem;"> <div class="right_arrow"></div></div> -->
+              <div class="col"><img src="./static/videos/rife03.gif" alt="loading......"></div>
+              <div class="col"><img src="./static/videos/amt03.gif" alt="loading......"></div>
+              <div class="col"><img src="./static/videos/ema03.gif" alt="loading......"></div>
+              <!-- <div class="col"><img src="./static/videos/sgm03.gif" alt="loading......"></div> -->
+              <div class="col"><img src="./static/videos/our03.gif" alt="loading......"></div>
+              <!-- <div class="col"><video autoplay loop muted><source type="video/mp4" src="./static/videos/10_gt.mp4"></video></div>  -->
+          </div>
+        </div>
+
+      	<div class="item"> 
+          <div class="row"> 
+            <!-- <div class="col"><video autoplay loop muted ><source type="video/mp4" src="./static/videos/1_input.mp4"></video></div> 
+              <div class="col" style="width: 12rem;"> <div class="right_arrow"></div></div> -->
+              <div class="col"><img src="./static/videos/rife04.gif" alt="loading......"></div>
+              <div class="col"><img src="./static/videos/amt04.gif" alt="loading......"></div>
+              <div class="col"><img src="./static/videos/ema04.gif" alt="loading......"></div>
+              <!-- <div class="col"><img src="./static/videos/sgm04.gif" alt="loading......"></div> -->
+              <div class="col"><img src="./static/videos/our04.gif" alt="loading......"></div>
+              <!-- <div class="col"><video autoplay loop muted><source type="video/mp4" src="./static/videos/12_gt.mp4"></video></div>  -->
+          </div>
+        </div>
+
+        <div class="item"> 
+          <div class="row"> 
+            <!-- <div class="col"><video autoplay loop muted ><source type="video/mp4" src="./static/videos/1_input.mp4"></video></div> 
+              <div class="col" style="width: 12rem;"> <div class="right_arrow"></div></div> -->
+              <div class="col"><img src="./static/videos/rife05.gif" alt="loading......"></div>
+              <div class="col"><img src="./static/videos/amt05.gif" alt="loading......"></div>
+              <div class="col"><img src="./static/videos/ema05.gif" alt="loading......"></div>
+              <!-- <div class="col"><img src="./static/videos/sgm05.gif" alt="loading......"></div> -->
+              <div class="col"><img src="./static/videos/our05.gif" alt="loading......"></div>
+              <!-- <div class="col"><video autoplay loop muted><source type="video/mp4" src="./static/videos/13_gt.mp4"></video></div>  -->
+          </div>
+        </div>
+
+        <div class="item"> 
+          <div class="row"> 
+            <!-- <div class="col"><video autoplay loop muted ><source type="video/mp4" src="./static/videos/1_input.mp4"></video></div> 
+              <div class="col" style="width: 12rem;"> <div class="right_arrow"></div></div> -->
+              <div class="col"><img src="./static/videos/rife06.gif" alt="loading......"></div>
+              <div class="col"><img src="./static/videos/amt06.gif" alt="loading......"></div>
+              <div class="col"><img src="./static/videos/ema06.gif" alt="loading......"></div>
+              <!-- <div class="col"><img src="./static/videos/sgm06.gif" alt="loading......"></div> -->
+              <div class="col"><img src="./static/videos/our06.gif" alt="loading......"></div>
+              <!-- <div class="col"><video autoplay loop muted><source type="video/mp4" src="./static/videos/12_gt.mp4"></video></div>  -->
+          </div>
+        </div>
+
+        <div class="item"> 
+          <div class="row"> 
+            <!-- <div class="col"><video autoplay loop muted ><source type="video/mp4" src="./static/videos/1_input.mp4"></video></div> 
+              <div class="col" style="width: 12rem;"> <div class="right_arrow"></div></div> -->
+              <div class="col"><img src="./static/videos/rife07.gif" alt="loading......"></div>
+              <div class="col"><img src="./static/videos/amt07.gif" alt="loading......"></div>
+              <div class="col"><img src="./static/videos/ema07.gif" alt="loading......"></div>
+              <!-- <div class="col"><img src="./static/videos/sgm07.gif" alt="loading......"></div> -->
+              <div class="col"><img src="./static/videos/our07.gif" alt="loading......"></div>
+              <!-- <div class="col"><video autoplay loop muted><source type="video/mp4" src="./static/videos/12_gt.mp4"></video></div>  -->
+          </div>
+        </div>
+
+        <div class="item"> 
+          <div class="row"> 
+            <!-- <div class="col"><video autoplay loop muted ><source type="video/mp4" src="./static/videos/1_input.mp4"></video></div> 
+              <div class="col" style="width: 12rem;"> <div class="right_arrow"></div></div> -->
+              <div class="col"><img src="./static/videos/rife08.gif" alt="loading......"></div>
+              <div class="col"><img src="./static/videos/amt08.gif" alt="loading......"></div>
+              <div class="col"><img src="./static/videos/ema08.gif" alt="loading......"></div>
+              <!-- <div class="col"><img src="./static/videos/sgm08.gif" alt="loading......"></div> -->
+              <div class="col"><img src="./static/videos/our08.gif" alt="loading......"></div>
+              <!-- <div class="col"><video autoplay loop muted><source type="video/mp4" src="./static/videos/12_gt.mp4"></video></div>  -->
+          </div>
+        </div>
+
+        <div class="item"> 
+          <div class="row"> 
+            <!-- <div class="col"><video autoplay loop muted ><source type="video/mp4" src="./static/videos/1_input.mp4"></video></div> 
+              <div class="col" style="width: 12rem;"> <div class="right_arrow"></div></div> -->
+              <div class="col"><img src="./static/videos/rife09.gif" alt="loading......"></div>
+              <div class="col"><img src="./static/videos/amt09.gif" alt="loading......"></div>
+              <div class="col"><img src="./static/videos/ema09.gif" alt="loading......"></div>
+              <!-- <div class="col"><img src="./static/videos/sgm09.gif" alt="loading......"></div> -->
+              <div class="col"><img src="./static/videos/our09.gif" alt="loading......"></div>
+              <!-- <div class="col"><video autoplay loop muted><source type="video/mp4" src="./static/videos/12_gt.mp4"></video></div>  -->
+          </div>
+        </div>
+
+        <div class="item"> 
+          <div class="row"> 
+            <!-- <div class="col"><video autoplay loop muted ><source type="video/mp4" src="./static/videos/1_input.mp4"></video></div> 
+              <div class="col" style="width: 12rem;"> <div class="right_arrow"></div></div> -->
+              <div class="col"><img src="./static/videos/rife10.gif" alt="loading......"></div>
+              <div class="col"><img src="./static/videos/amt10.gif" alt="loading......"></div>
+              <div class="col"><img src="./static/videos/ema10.gif" alt="loading......"></div>
+              <!-- <div class="col"><img src="./static/videos/sgm10.gif" alt="loading......"></div> -->
+              <div class="col"><img src="./static/videos/our10.gif" alt="loading......"></div>
+              <!-- <div class="col"><video autoplay loop muted><source type="video/mp4" src="./static/videos/12_gt.mp4"></video></div>  -->
+          </div>
+        </div>
+
+    </div>
+  <div>
+</div>
+</section>
+
+
+
+<footer class="footer">
+  <div class="container">
+    <div class="content has-text-centered">
+      <!-- <a class="icon-link"
+         href="./static/videos/nerfies_paper.pdf">
+        <i class="fas fa-file-pdf"></i>
+      </a> -->
+      <a class="icon-link" href="https://github.com" class="external-link" disabled>
+        <i class="fab fa-github"></i>
+      </a>
+    </div>
+    <div class="columns is-centered">
+      <div class="column is-8">
+        <div class="content">
+          <p>
+            This website is licensed under a <a rel="license"
+                                                href="http://creativecommons.org/licenses/by-sa/4.0/">Creative
+            Commons Attribution-ShareAlike 4.0 International License</a>.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
